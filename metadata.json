@@ -1,0 +1,7 @@
+{
+  "name": "AR Book Folding Assistant",
+  "description": "A responsive, browser-based AR Book Folding app that uses the device’s camera to assist users in marking book pages for folding patterns.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

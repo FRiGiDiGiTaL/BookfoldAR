@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>BookfoldAR - Augmented Reality Book Folding Assistant</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Professional AR-powered book folding assistant with camera overlay, voice control, and precise measurement tools" />
+    <meta name="theme-color" content="#1e293b" />
+    <meta name="background-color" content="#0f172a" />
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BookfoldAR" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
+    
+    <!-- Standard Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#1e293b" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="BookfoldAR - AR Book Folding Assistant" />
+    <meta property="og:description" content="Professional AR-powered book folding assistant with camera overlay, voice control, and precise measurement tools" />
+    <meta property="og:image" content="/icons/og-image.png" />
+    <meta property="og:url" content="https://bookfoldar.com" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BookfoldAR - AR Book Folding Assistant" />
+    <meta name="twitter:description" content="Professional AR-powered book folding assistant with camera overlay, voice control, and precise measurement tools" />
+    <meta name="twitter:image" content="/icons/twitter-image.png" />
+    
+    <!-- Performance and Security -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="https://esm.sh" />
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        /* Remove overflow hidden to allow proper mobile scrolling */
+        overflow: auto;
+      }
+      #root {
+        height: 100%;
+        min-height: 100vh; /* Ensure full viewport height */
+      }
+      /* Improve mobile scrolling behavior */
+      body {
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Ensure mobile viewport handles properly */
+      @media (max-width: 768px) {
+        #root {
+          min-height: 100vh;
+          min-height: -webkit-fill-available; /* iOS Safari support */
+        }
+      }
+      
+      /* PWA Splash Screen Styles */
+      .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      .splash-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .splash-logo {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        margin-bottom: 24px;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+        animation: logoFloat 2s ease-in-out infinite alternate;
+      }
+      
+      @keyframes logoFloat {
+        0% { transform: translateY(0px) scale(1); }
+        100% { transform: translateY(-10px) scale(1.05); }
+      }
+      
+      .splash-title {
+        font-size: 28px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      
+      .splash-subtitle {
+        font-size: 16px;
+        color: #94a3b8;
+        text-align: center;
+        margin-bottom: 40px;
+      }
+      
+      .splash-loading {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(59, 130, 246, 0.3);
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Hide splash screen when app is ready */
+      .app-ready .splash-screen {
+        display: none;
+      }
+    </style>
+    
+    <!-- Import Map for React -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://esm.sh/react@^19.1.1/",
+        "react": "https://esm.sh/react@^19.1.1",
+        "react-dom/": "https://esm.sh/react-dom@^19.1.1/"
+      }
+    }
+    </script>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body class="bg-gray-900 text-gray-100 font-sans antialiased">
+    <!-- PWA Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+      <div class="splash-logo">📖</div>
+      <div class="splash-title">BookfoldAR</div>
+      <div class="splash-subtitle">AR Book Folding Assistant</div>
+      <div class="splash-loading"></div>
+    </div>
+    
+    <!-- Main App Root -->
+    <div id="root"></div>
+    
+    <!-- PWA Installation Script -->
+    <script>
+      // Hide splash screen when app loads
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const splash = document.getElementById('splash-screen');
+          if (splash) {
+            splash.classList.add('hidden');
+            setTimeout(() => {
+              splash.style.display = 'none';
+            }, 500);
+          }
+          document.body.classList.add('app-ready');
+        }, 1000);
+      });
+      
+      // Handle install prompt for older browsers
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('💾 PWA: Install prompt ready');
+      });
+      
+      // Log PWA installation
+      window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA: BookfoldAR installed successfully');
+        deferredPrompt = null;
+      });
+      
+      // Service Worker registration fallback
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('✅ SW: Registered successfully');
+            })
+            .catch((error) => {
+              console.log('❌ SW: Registration failed');
+            });
+        });
+      }
+      
+      // Handle PWA shortcuts
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('camera') === 'true') {
+        sessionStorage.setItem('pwa-auto-camera', 'true');
+      }
+      if (urlParams.get('voice') === 'true') {
+        sessionStorage.setItem('pwa-auto-voice', 'true');
+      }
+    </script>
+    
+    <!-- Main App Module -->
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

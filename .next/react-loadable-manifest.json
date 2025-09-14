@@ -1,0 +1,38 @@
+{
+  "MainApp.tsx -> ./components/CameraView": {
+    "id": "MainApp.tsx -> ./components/CameraView",
+    "files": [
+      "static/chunks/_pages-dir-browser_components_CameraView_tsx.js"
+    ]
+  },
+  "MainApp.tsx -> ./components/ControlPanel": {
+    "id": "MainApp.tsx -> ./components/ControlPanel",
+    "files": [
+      "static/chunks/_pages-dir-browser_components_ControlPanel_tsx.js"
+    ]
+  },
+  "components\\ControlPanel.tsx -> ./VoiceControl": {
+    "id": "components\\ControlPanel.tsx -> ./VoiceControl",
+    "files": [
+      "static/chunks/_pages-dir-browser_components_VoiceControl_tsx.js"
+    ]
+  },
+  "node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": "node_modules\\next\\dist\\client\\index.js -> ../pages/_app",
+    "files": [
+      "static/chunks/_pages-dir-browser_node_modules_next_dist_pages__app_js.js"
+    ]
+  },
+  "node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": "node_modules\\next\\dist\\client\\index.js -> ../pages/_error",
+    "files": [
+      "static/chunks/_pages-dir-browser_node_modules_next_dist_pages__error_js.js"
+    ]
+  },
+  "pages\\app.tsx -> ../MainApp": {
+    "id": "pages\\app.tsx -> ../MainApp",
+    "files": [
+      "static/chunks/_pages-dir-browser_MainApp_tsx.js"
+    ]
+  }
+}
