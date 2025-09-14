@@ -1,10 +1,6 @@
 // pages/api/check-subscription.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getUserSubscriptionStatus } from "../../lib/supabase";
-
-interface CheckSubscriptionRequest {
-  email: string;
-}
+import { supabaseAdmin } from "../../lib/supabase";
 
 interface CheckSubscriptionResponse {
   success: boolean;
@@ -23,21 +19,21 @@ export default async function handler(
   res: NextApiResponse<CheckSubscriptionResponse>
 ) {
   if (req.method !== "POST") {
-    return res.status(405).json({ 
-      success: false, 
+    return res.status(405).json({
+      success: false,
       error: "Method not allowed",
       status: {
         hasActiveSubscription: false,
-        subscriptionStatus: 'none',
-        planType: 'none',
+        subscriptionStatus: "none",
+        planType: "none",
         trialActive: false,
-        trialDaysRemaining: 0
-      }
+        trialDaysRemaining: 0,
+      },
     });
   }
 
   try {
-    const { email }: CheckSubscriptionRequest = req.body;
+    const { email } = req.body as { email?: string };
 
     if (!email || typeof email !== "string") {
       return res.status(400).json({
@@ -45,91 +41,96 @@ export default async function handler(
         error: "Email is required",
         status: {
           hasActiveSubscription: false,
-          subscriptionStatus: 'none',
-          planType: 'none',
+          subscriptionStatus: "none",
+          planType: "none",
           trialActive: false,
-          trialDaysRemaining: 0
-        }
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid email address",
-        status: {
-          hasActiveSubscription: false,
-          subscriptionStatus: 'none',
-          planType: 'none',
-          trialActive: false,
-          trialDaysRemaining: 0
-        }
+          trialDaysRemaining: 0,
+        },
       });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    
-    // For now, let's bypass the database check and return a default trial status
-    console.log('🔄 Bypassing database check due to schema error for:', cleanEmail);
-    
-    // Check if user has localStorage trial data
-    const defaultStatus = {
-      hasActiveSubscription: false,
-      subscriptionStatus: 'none',
-      planType: 'none',
-      trialActive: true, // Give benefit of doubt for trial
-      trialDaysRemaining: 7
-    };
 
-    return res.status(200).json({
-      success: true,
-      status: defaultStatus
+    // 🔹 Check user access via Supabase function
+    const { data, error } = await supabaseAdmin.rpc("check_user_access", {
+      user_email: cleanEmail,
     });
 
-    // TODO: Fix database schema and re-enable this code
-    /*
-    const subscriptionStatus = await getUserSubscriptionStatus(cleanEmail);
+    if (error) {
+      console.error("Supabase check_user_access error:", error);
+      throw new Error("Database check failed");
+    }
 
-    if (!subscriptionStatus) {
-      // User doesn't exist yet
+    // If no user exists, start a trial automatically
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      console.log(`No user found for ${cleanEmail}, starting trial...`);
+      await supabaseAdmin.rpc("start_user_trial", { user_email: cleanEmail });
+
       return res.status(200).json({
         success: true,
         status: {
           hasActiveSubscription: false,
-          subscriptionStatus: 'none',
-          planType: 'none',
-          trialActive: false,
-          trialDaysRemaining: 0
-        }
+          subscriptionStatus: "trial",
+          planType: "trial",
+          trialActive: true,
+          trialDaysRemaining: 3, // default trial length
+        },
       });
+    }
+
+    // Format response from Supabase
+    const accessRecord = Array.isArray(data) ? data[0] : data;
+
+    let responseStatus: CheckSubscriptionResponse["status"] = {
+      hasActiveSubscription: false,
+      subscriptionStatus: "none",
+      planType: "none",
+      trialActive: false,
+      trialDaysRemaining: 0,
+    };
+
+    if (accessRecord.access_type === "lifetime") {
+      responseStatus = {
+        hasActiveSubscription: true,
+        subscriptionStatus: "active",
+        planType: "lifetime",
+        trialActive: false,
+        trialDaysRemaining: 0,
+      };
+    } else if (accessRecord.access_type === "trial" && accessRecord.trial_days_remaining > 0) {
+      responseStatus = {
+        hasActiveSubscription: false,
+        subscriptionStatus: "trial",
+        planType: "trial",
+        trialActive: true,
+        trialDaysRemaining: accessRecord.trial_days_remaining,
+      };
+    } else if (accessRecord.access_type === "expired") {
+      responseStatus = {
+        hasActiveSubscription: false,
+        subscriptionStatus: "expired",
+        planType: "none",
+        trialActive: false,
+        trialDaysRemaining: 0,
+      };
     }
 
     return res.status(200).json({
       success: true,
-      status: {
-        hasActiveSubscription: subscriptionStatus.has_active_subscription,
-        subscriptionStatus: subscriptionStatus.subscription_status,
-        planType: subscriptionStatus.plan_type,
-        trialActive: subscriptionStatus.trial_active,
-        trialDaysRemaining: subscriptionStatus.trial_days_remaining
-      }
+      status: responseStatus,
     });
-    */
-
   } catch (error) {
     console.error("Check subscription error:", error);
-    
     return res.status(500).json({
       success: false,
       error: "Internal server error",
       status: {
         hasActiveSubscription: false,
-        subscriptionStatus: 'error',
-        planType: 'none',
+        subscriptionStatus: "error",
+        planType: "none",
         trialActive: false,
-        trialDaysRemaining: 0
-      }
+        trialDaysRemaining: 0,
+      },
     });
   }
 }
