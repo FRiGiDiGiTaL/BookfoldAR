@@ -1,27 +1,19 @@
-// lib/supabase.ts - Simplified for one-time payments only
+// lib/supabase.ts - Simplified version for one-time payments
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Only initialize if environment variables are present
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Admin client for server-side operations
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Admin client for server-side operations (optional)
+export const supabaseAdmin = supabaseUrl && supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
 
-// Client for browser operations  
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Simplified types for one-time payment system
-export interface User {
-  id: string;
-  email: string;
-  stripe_customer_id?: string;
-  created_at: string;
-}
-
+// Simple types for one-time payment system
 export interface Purchase {
   id: string;
-  user_id: string;
+  email: string;
   stripe_session_id?: string;
   stripe_payment_intent_id?: string;
   amount: number;
@@ -30,34 +22,20 @@ export interface Purchase {
   created_at: string;
 }
 
-export interface StripeEvent {
-  id: string;
-  stripe_event_id: string;
-  event_type: string;
-  processed: boolean;
-  created_at: string;
-  processed_at?: string;
-}
-
-// Main function to check if user has paid for access
+// Simple function to check if user has paid (for future use)
 export async function checkUserAccess(email: string): Promise<boolean> {
-  if (!email || !email.includes('@')) {
-    console.log('Invalid email provided for access check');
+  if (!supabaseAdmin || !email || !email.includes('@')) {
+    console.log('Supabase not configured or invalid email, using localStorage only');
     return false;
   }
 
   try {
-    console.log(`Checking access for: ${email}`);
+    console.log(`Checking database access for: ${email}`);
 
-    // Look for any successful purchase by this email
     const { data, error } = await supabaseAdmin
       .from('purchases')
-      .select(`
-        id,
-        status,
-        users!inner(email)
-      `)
-      .eq('users.email', email.toLowerCase().trim())
+      .select('status')
+      .eq('email', email.toLowerCase().trim())
       .eq('status', 'paid')
       .limit(1);
 
@@ -67,7 +45,7 @@ export async function checkUserAccess(email: string): Promise<boolean> {
     }
 
     const hasAccess = data && data.length > 0;
-    console.log(`Access check result for ${email}: ${hasAccess}`);
+    console.log(`Database access check result for ${email}: ${hasAccess}`);
     
     return hasAccess;
 
@@ -77,52 +55,49 @@ export async function checkUserAccess(email: string): Promise<boolean> {
   }
 }
 
-// Helper function to get user by email
-export async function getUserByEmail(email: string): Promise<User | null> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('email', email.toLowerCase().trim())
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned
-        return null;
-      }
-      console.error('Error fetching user:', error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error getting user by email:', error);
-    return null;
+// Function to record a purchase (for webhook use)
+export async function recordPurchase(purchaseData: Omit<Purchase, 'id' | 'created_at'>): Promise<boolean> {
+  if (!supabaseAdmin) {
+    console.log('Supabase not configured, cannot record purchase');
+    return false;
   }
-}
 
-// Helper function to create a new user
-export async function createUser(email: string, stripeCustomerId?: string): Promise<User | null> {
   try {
     const { data, error } = await supabaseAdmin
-      .from('users')
+      .from('purchases')
       .insert({
-        email: email.toLowerCase().trim(),
-        stripe_customer_id: stripeCustomerId,
+        ...purchaseData,
         created_at: new Date().toISOString(),
       })
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating user:', error);
-      return null;
+      console.error('Error recording purchase:', error);
+      return false;
     }
 
-    return data;
+    console.log('✅ Purchase recorded:', data.id);
+    return true;
+
   } catch (error) {
-    console.error('Error creating user:', error);
-    return null;
+    console.error('Error recording purchase:', error);
+    return false;
   }
 }
+
+// Database schema for reference (SQL):
+/*
+CREATE TABLE purchases (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  email text NOT NULL,
+  stripe_session_id text,
+  stripe_payment_intent_id text,
+  amount integer NOT NULL,
+  currency text DEFAULT 'usd',
+  status text DEFAULT 'pending',
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE INDEX idx_purchases_email_status ON purchases(email, status);
+*/
