@@ -1,4 +1,4 @@
-// pages/index.tsx
+// pages/index.tsx - Fixed landing page with proper pricing and payment flow
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
@@ -6,7 +6,13 @@ interface TrialData {
   email: string;
   startDate: number;
   expiryDate: number;
-  status: "active" | "expired";
+  status: 'active' | 'expired';
+}
+
+interface SubscriptionData {
+  active: boolean;
+  plan: string;
+  email: string;
 }
 
 export default function LandingPage() {
@@ -19,7 +25,9 @@ export default function LandingPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [trialDaysRemaining, setTrialDaysRemaining] = useState<number>(0);
 
-  useEffect(() => setIsClient(true), []);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const getTrialData = (): TrialData | null => {
     try {
@@ -32,60 +40,54 @@ export default function LandingPage() {
     }
   };
 
-  const calculateTrialDaysRemaining = (trialData: TrialData) =>
-    Math.max(0, Math.ceil((trialData.expiryDate - Date.now()) / (1000 * 60 * 60 * 24)));
+  const getSubscriptionData = (): SubscriptionData | null => {
+    try {
+      const subscription = localStorage.getItem("bookfoldar_subscription");
+      return subscription ? JSON.parse(subscription) : null;
+    } catch (error) {
+      console.error("Error parsing subscription data:", error);
+      localStorage.removeItem("bookfoldar_subscription");
+      return null;
+    }
+  };
 
-  const isTrialActive = (trialData: TrialData) => Date.now() < trialData.expiryDate && trialData.status === "active";
+  const calculateTrialDaysRemaining = (trialData: TrialData): number => {
+    const remaining = Math.ceil((trialData.expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, remaining);
+  };
 
-  const checkUserAccess = async (emailToCheck?: string) => {
-    const checkEmail = emailToCheck || localStorage.getItem("userEmail");
+  const isTrialActive = (trialData: TrialData): boolean => {
+    return Date.now() < trialData.expiryDate && trialData.status === 'active';
+  };
 
-    if (checkEmail) {
-      try {
-        const response = await fetch("/api/check-subscription", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: checkEmail }),
-        });
+  const checkUserAccess = async () => {
+    console.log('🔍 Checking user access on landing page...');
 
-        if (!response.ok) {
-          console.error("Failed to fetch subscription:", await response.text());
-          setUserStatus("new");
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data?.status?.hasActiveSubscription) {
-          setUserEmail(checkEmail);
-          setUserStatus("paid");
-          localStorage.setItem("userEmail", checkEmail);
-          return;
-        }
-
-        if (data?.status?.trialActive) {
-          setUserEmail(checkEmail);
-          setUserStatus("trial");
-          setTrialDaysRemaining(data.status.trialDaysRemaining || 0);
-          localStorage.setItem("userEmail", checkEmail);
-          return;
-        }
-
-        setUserStatus("expired");
-        return;
-      } catch (error) {
-        console.error("Error checking access:", error);
-      }
+    // First check for paid subscription (highest priority)
+    const subscriptionData = getSubscriptionData();
+    if (subscriptionData && subscriptionData.active && subscriptionData.email) {
+      console.log('✅ Found active subscription for:', subscriptionData.email);
+      setUserEmail(subscriptionData.email);
+      setUserStatus("paid");
+      return;
     }
 
+    // Then check trial status
     const trialData = getTrialData();
     if (trialData) {
       setUserEmail(trialData.email);
       const daysRemaining = calculateTrialDaysRemaining(trialData);
       setTrialDaysRemaining(daysRemaining);
-      setUserStatus(isTrialActive(trialData) ? "trial" : "expired");
-      if (isTrialActive(trialData)) localStorage.setItem("userEmail", trialData.email);
+
+      if (isTrialActive(trialData)) {
+        console.log(`✅ Found active trial for ${trialData.email}, ${daysRemaining} days remaining`);
+        setUserStatus("trial");
+      } else {
+        console.log('❌ Trial expired for:', trialData.email);
+        setUserStatus("expired");
+      }
     } else {
+      console.log('👤 New user, no trial or subscription found');
       setUserStatus("new");
     }
   };
@@ -93,71 +95,343 @@ export default function LandingPage() {
   useEffect(() => {
     if (isClient) {
       checkUserAccess();
-      if (router.query.success === "true") {
-        const storedEmail = localStorage.getItem("userEmail");
-        if (storedEmail) setTimeout(() => checkUserAccess(storedEmail), 2000);
+      
+      // Check for successful payment return
+      if (router.query.success === 'true') {
+        console.log('🎉 Payment success detected, rechecking access');
+        setTimeout(() => checkUserAccess(), 2000); // Give webhook time to process
       }
     }
   }, [isClient, router.query.success]);
 
   const startTrial = async () => {
-    if (!email || !email.includes("@")) {
-      alert("Please enter a valid email address");
+    if (!email || !email.includes('@')) {
+      alert('Please enter a valid email address');
       return;
     }
 
     setIsStartingTrial(true);
 
     try {
+      // Create trial data
       const startDate = Date.now();
-      const expiryDate = startDate + 3 * 24 * 60 * 60 * 1000;
+      const expiryDate = startDate + (3 * 24 * 60 * 60 * 1000); // 3 days
+      
+      const trialData: TrialData = {
+        email: email.trim().toLowerCase(),
+        startDate,
+        expiryDate,
+        status: 'active'
+      };
 
-      const trialData: TrialData = { email: email.trim().toLowerCase(), startDate, expiryDate, status: "active" };
-      localStorage.setItem("bookfoldar_trial", JSON.stringify(trialData));
-      localStorage.setItem("userEmail", email.trim().toLowerCase());
+      // Store trial data locally
+      localStorage.setItem('bookfoldar_trial', JSON.stringify(trialData));
+      localStorage.setItem('userEmail', email.trim().toLowerCase());
 
+      console.log('✅ Trial started for:', email.trim().toLowerCase());
+
+      // Update state
       setUserEmail(email.trim().toLowerCase());
       setUserStatus("trial");
       setTrialDaysRemaining(3);
+
     } catch (error) {
-      console.error("Error starting trial:", error);
-      alert("Failed to start trial. Please try again.");
+      console.error('Error starting trial:', error);
+      alert('Failed to start trial. Please try again.');
     } finally {
       setIsStartingTrial(false);
     }
   };
 
-  const handleAccessApp = () => router.push("/app");
+  const handlePayment = async () => {
+    const userEmailToUse = userEmail || email.trim().toLowerCase();
+    
+    if (!userEmailToUse) {
+      alert('Please enter your email address');
+      return;
+    }
 
-  return (
-    <div>
-      <h1>Welcome to BookfoldAR</h1>
-      <p>Status: {userStatus}</p>
+    setIsProcessingPayment(true);
 
-      {userStatus === "new" && (
-        <div>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
-          <button onClick={startTrial} disabled={isStartingTrial}>
-            {isStartingTrial ? "Starting Trial..." : "Start Trial"}
+    try {
+      console.log('💳 Creating checkout session for:', userEmailToUse);
+
+      // Create checkout session for $24.99 one-time payment
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmailToUse,
+          successUrl: `${window.location.origin}/?success=true`,
+          cancelUrl: `${window.location.origin}/?cancelled=true`
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Store email for later verification
+      localStorage.setItem('userEmail', userEmailToUse);
+
+      // Redirect to Stripe Checkout
+      const stripe = await import('@stripe/stripe-js').then(mod => 
+        mod.loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+      );
+      
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
+
+      const { error: stripeError } = await stripe.redirectToCheckout({
+        sessionId: data.sessionId,
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
+      }
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Payment failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleAccessApp = () => {
+    router.push("/app");
+  };
+
+  const renderMainSection = () => {
+    if (!isClient || userStatus === "loading") {
+      return (
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 max-w-lg mx-auto border border-white/20 mb-8">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-8 bg-gray-300/20 rounded w-3/4 mb-4"></div>
+            <div className="h-12 bg-gray-300/20 rounded w-full mb-4"></div>
+            <div className="h-4 bg-gray-300/20 rounded w-1/2"></div>
+          </div>
+        </div>
+      );
+    }
+
+    if (userStatus === "paid") {
+      return (
+        <div className="bg-green-500/20 backdrop-blur-lg rounded-xl p-8 max-w-lg mx-auto border border-green-400/30 mb-8">
+          <h3 className="text-2xl font-semibold mb-4 text-green-300">
+            🎉 Welcome Back!
+          </h3>
+          <p className="text-sm text-gray-200 mb-4">
+            You have full access to BookfoldAR. Ready to create amazing book art?
+          </p>
+          <div className="mb-4 p-3 bg-green-500/10 rounded-lg border border-green-400/20">
+            <p className="text-xs text-green-200">
+              ✅ Account: {userEmail}<br />
+              ✅ Full lifetime access unlocked<br />
+              ✅ All AR features available
+            </p>
+          </div>
+          <button
+            onClick={handleAccessApp}
+            className="w-full bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold text-white transition-colors"
+          >
+            🚀 Launch BookfoldAR
           </button>
         </div>
-      )}
+      );
+    }
 
-      {userStatus === "trial" && (
-        <div>
-          <p>Trial days remaining: {trialDaysRemaining}</p>
-          <button onClick={handleAccessApp}>Access App</button>
+    if (userStatus === "trial") {
+      return (
+        <div className="bg-blue-500/20 backdrop-blur-lg rounded-xl p-8 max-w-lg mx-auto border border-blue-400/30 mb-8">
+          <h3 className="text-2xl font-semibold mb-4 text-blue-300">
+            ✨ Trial Active
+          </h3>
+          <p className="text-sm text-gray-200 mb-4">
+            You have <span className="font-bold text-blue-300">{trialDaysRemaining} days remaining</span> in your free trial.
+          </p>
+          <div className="mb-4 p-3 bg-blue-500/10 rounded-lg border border-blue-400/20">
+            <p className="text-xs text-blue-200">
+              ✅ Trial for: {userEmail}<br />
+              ✅ Full access to all AR features<br />
+              ✅ No credit card required
+            </p>
+          </div>
+          <button
+            onClick={handleAccessApp}
+            className="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold text-white transition-colors mb-3"
+          >
+            📱 Continue Using BookfoldAR
+          </button>
+          <button
+            onClick={handlePayment}
+            disabled={isProcessingPayment}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-500 px-4 py-2 rounded text-white text-sm transition-colors"
+          >
+            {isProcessingPayment ? 'Processing...' : 'Upgrade Now - $24.99 (Lifetime)'}
+          </button>
         </div>
-      )}
+      );
+    }
 
-      {userStatus === "paid" && <button onClick={handleAccessApp}>Access App</button>}
-      {userStatus === "expired" && <p>Your trial has expired. Please purchase access.</p>}
+    if (userStatus === "expired") {
+      return (
+        <div className="bg-red-500/20 backdrop-blur-lg rounded-xl p-8 max-w-lg mx-auto border border-red-400/30 mb-8">
+          <h3 className="text-2xl font-semibold mb-4 text-red-300">
+            ⏰ Trial Expired
+          </h3>
+          <p className="text-sm text-gray-200 mb-4">
+            Your 3-day trial has ended. Upgrade to continue using BookfoldAR's amazing AR features!
+          </p>
+          <div className="mb-4 p-3 bg-red-500/10 rounded-lg border border-red-400/20">
+            <p className="text-xs text-red-200">
+              📧 Account: {userEmail}<br />
+              ⏰ Trial ended<br />
+              💎 One-time payment for lifetime access
+            </p>
+          </div>
+          <button
+            onClick={handlePayment}
+            disabled={isProcessingPayment}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-500 px-6 py-3 rounded-lg font-semibold text-white transition-colors"
+          >
+            {isProcessingPayment ? 'Processing...' : '💎 Get Lifetime Access - $24.99'}
+          </button>
+        </div>
+      );
+    }
 
-      {/* FOOTER */}
-      <footer style={{ textAlign: "center", padding: "1rem", fontSize: "0.875rem", color: "#666" }}>
-        <a href="/privacy" style={{ margin: "0 0.5rem" }}>Privacy Policy</a> |
-        <a href="/terms" style={{ margin: "0 0.5rem" }}>Terms of Service</a> |
-        <a href="/refund" style={{ margin: "0 0.5rem" }}>Refund Policy</a>
+    // New user - show trial signup
+    return (
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 max-w-lg mx-auto border border-white/20 mb-8">
+        <h3 className="text-2xl font-semibold mb-4">
+          🚀 Start Your 3-Day Free Trial
+        </h3>
+        <div className="text-center mb-6">
+          <span className="text-2xl font-bold text-blue-400">3 Days Free</span>
+          <span className="block text-gray-400 mt-1">Then $24.99 lifetime</span>
+        </div>
+        <p className="text-sm text-gray-200 mb-6">
+          Full access to all AR features during your trial. No credit card required to start!
+        </p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isStartingTrial}
+            />
+          </div>
+          
+          <button
+            onClick={startTrial}
+            disabled={isStartingTrial || !email}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed px-6 py-3 rounded-lg font-semibold text-white transition-colors"
+          >
+            {isStartingTrial ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Starting Trial...
+              </span>
+            ) : (
+              '🎯 Start 3-Day Free Trial'
+            )}
+          </button>
+          
+          <p className="text-xs text-gray-400 text-center">
+            No credit card required. Cancel anytime during trial.
+          </p>
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-500/10 rounded-lg border border-blue-400/20">
+          <h4 className="font-semibold text-blue-300 mb-2">What You Get:</h4>
+          <ul className="text-xs text-blue-200 space-y-1">
+            <li>✅ AR camera with real-time overlay</li>
+            <li>✅ Voice control navigation</li>
+            <li>✅ PDF import capabilities</li>
+            <li>✅ Advanced mark navigation</li>
+            <li>✅ Lifetime access after trial</li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-gray-900 text-white">
+      {/* Hero Section */}
+      <section className="text-center py-20 bg-gradient-to-r from-blue-600 to-purple-700 px-4">
+        <h1 className="text-5xl font-bold mb-4">📚 BookfoldAR</h1>
+        <p className="text-lg max-w-2xl mx-auto text-gray-100 mb-8">
+          Precision book folding with augmented reality assistance. Transform any book into stunning art with AR guidance.
+        </p>
+        {renderMainSection()}
+      </section>
+
+      {/* Features Section */}
+      <section className="max-w-6xl mx-auto py-16 px-6 space-y-20">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+            <div className="text-4xl mb-4">📱</div>
+            <h3 className="text-xl font-bold mb-3">AR Camera Overlay</h3>
+            <p className="text-gray-300">
+              Real-time augmented reality guidance shows exactly where to fold your book pages with precision accuracy.
+            </p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+            <div className="text-4xl mb-4">🎤</div>
+            <h3 className="text-xl font-bold mb-3">Voice Control</h3>
+            <p className="text-gray-300">
+              Navigate hands-free with voice commands while your hands stay focused on folding.
+            </p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+            <div className="text-4xl mb-4">📄</div>
+            <h3 className="text-xl font-bold mb-3">PDF Import</h3>
+            <p className="text-gray-300">
+              Import folding patterns directly from PDF files with automatic measurement extraction.
+            </p>
+          </div>
+        </div>
+        
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-8">Why BookfoldAR?</h2>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="text-left">
+              <h3 className="text-xl font-semibold mb-3 text-blue-300">✨ Professional Results</h3>
+              <p className="text-gray-300 mb-4">
+                Get museum-quality book art with precise measurements and AR-guided folding that ensures perfect alignment every time.
+              </p>
+            </div>
+            <div className="text-left">
+              <h3 className="text-xl font-semibold mb-3 text-green-300">⚡ Save Time</h3>
+              <p className="text-gray-300 mb-4">
+                Complete projects 3x faster with AR overlay eliminating measurement errors and providing visual guidance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-gray-800 py-8 px-4 text-center text-gray-400">
+        <p>&copy; 2025 BookfoldAR. Transform your book folding with AR precision.</p>
       </footer>
     </div>
   );

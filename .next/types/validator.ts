@@ -40,57 +40,63 @@ type ApiRouteConfig = {
 
 
 
-// Validate ../../pages/app.tsx
+// Validate ../pages/_app.tsx
 {
-  const handler = {} as typeof import("../../pages/app.js")
+  const handler = {} as typeof import("../pages/_app.js")
   handler satisfies PagesPageConfig
 }
 
-// Validate ../../pages/index.tsx
+// Validate ../pages/app.tsx
 {
-  const handler = {} as typeof import("../../pages/index.js")
+  const handler = {} as typeof import("../pages/app.js")
   handler satisfies PagesPageConfig
 }
 
-// Validate ../../pages/paywall.tsx
+// Validate ../pages/index.tsx
 {
-  const handler = {} as typeof import("../../pages/paywall.js")
+  const handler = {} as typeof import("../pages/index.js")
   handler satisfies PagesPageConfig
 }
 
-// Validate ../../pages/privacy.tsx
+// Validate ../pages/paywall.tsx
 {
-  const handler = {} as typeof import("../../pages/privacy.js")
+  const handler = {} as typeof import("../pages/paywall.js")
   handler satisfies PagesPageConfig
 }
 
-// Validate ../../pages/refund.tsx
+// Validate ../pages/privacy.tsx
 {
-  const handler = {} as typeof import("../../pages/refund.js")
+  const handler = {} as typeof import("../pages/privacy.js")
   handler satisfies PagesPageConfig
 }
 
-// Validate ../../pages/terms.tsx
+// Validate ../pages/refund.tsx
 {
-  const handler = {} as typeof import("../../pages/terms.js")
+  const handler = {} as typeof import("../pages/refund.js")
   handler satisfies PagesPageConfig
 }
 
-// Validate ../../pages/api/create-checkout.ts
+// Validate ../pages/terms.tsx
 {
-  const handler = {} as typeof import("../../pages/api/create-checkout.js")
+  const handler = {} as typeof import("../pages/terms.js")
+  handler satisfies PagesPageConfig
+}
+
+// Validate ../pages/api/create-checkout.ts
+{
+  const handler = {} as typeof import("../pages/api/create-checkout.js")
   handler satisfies ApiRouteConfig
 }
 
-// Validate ../../pages/api/verify-session.ts
+// Validate ../pages/api/verify-session.ts
 {
-  const handler = {} as typeof import("../../pages/api/verify-session.js")
+  const handler = {} as typeof import("../pages/api/verify-session.js")
   handler satisfies ApiRouteConfig
 }
 
-// Validate ../../pages/api/webhook.ts
+// Validate ../pages/api/webhook.ts
 {
-  const handler = {} as typeof import("../../pages/api/webhook.js")
+  const handler = {} as typeof import("../pages/api/webhook.js")
   handler satisfies ApiRouteConfig
 }
 
