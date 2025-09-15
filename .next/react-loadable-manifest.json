@@ -1,44 +1,44 @@
 {
   "MainApp.tsx -> ./components/CameraView": {
-    "id": 1945,
+    "id": "MainApp.tsx -> ./components/CameraView",
     "files": [
-      "static/chunks/945.0eab6ef6674a3023.js"
+      "static/chunks/_pages-dir-browser_components_CameraView_tsx.js"
     ]
   },
   "MainApp.tsx -> ./components/ControlPanel": {
-    "id": 699,
+    "id": "MainApp.tsx -> ./components/ControlPanel",
     "files": [
-      "static/chunks/699.39b156ff9aa4dd0b.js"
+      "static/chunks/_pages-dir-browser_components_ControlPanel_tsx.js"
     ]
   },
   "components\\ControlPanel.tsx -> ./VoiceControl": {
-    "id": 7139,
+    "id": "components\\ControlPanel.tsx -> ./VoiceControl",
     "files": [
-      "static/chunks/139.2f8aef5522534815.js"
+      "static/chunks/_pages-dir-browser_components_VoiceControl_tsx.js"
     ]
   },
   "node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
-    "id": 1806,
+    "id": "node_modules\\next\\dist\\client\\index.js -> ../pages/_app",
     "files": [
-      "static/chunks/806.a7e9447414a53493.js"
+      "static/chunks/_pages-dir-browser_node_modules_next_dist_pages__app_js.js"
     ]
   },
   "node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
-    "id": 8123,
+    "id": "node_modules\\next\\dist\\client\\index.js -> ../pages/_error",
     "files": [
-      "static/chunks/123.f3d27f38429d3ab5.js"
+      "static/chunks/_pages-dir-browser_node_modules_next_dist_pages__error_js.js"
     ]
   },
   "pages\\app.tsx -> ../MainApp": {
-    "id": 9653,
+    "id": "pages\\app.tsx -> ../MainApp",
     "files": [
-      "static/chunks/653.ffa97cdb069407ca.js"
+      "static/chunks/_pages-dir-browser_MainApp_tsx.js"
     ]
   },
   "pages\\index.tsx -> @stripe/stripe-js": {
-    "id": 4241,
+    "id": "pages\\index.tsx -> @stripe/stripe-js",
     "files": [
-      "static/chunks/241.36de9bd760af2b99.js"
+      "static/chunks/_pages-dir-browser_node_modules_stripe_stripe-js_lib_index_mjs.js"
     ]
   }
 }
