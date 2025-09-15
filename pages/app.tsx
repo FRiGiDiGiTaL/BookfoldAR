@@ -1,4 +1,4 @@
-// pages/app.tsx - Complete replacement (copy this entire file)
+// pages/app.tsx - Fixed layout to prevent banner from breaking the side-by-side design
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
@@ -156,37 +156,9 @@ export default function AppPage() {
     );
   }
 
-  // Trial warning banner component
-  const TrialWarningBanner = () => {
-    if (accessStatus !== 'trial' || trialDaysRemaining > 3) return null;
+  // Trial warning banner removed to fix layout issues
 
-    const isUrgent = trialDaysRemaining <= 1;
-    const bgClass = isUrgent 
-      ? "bg-gradient-to-r from-red-600 to-red-700" 
-      : "bg-gradient-to-r from-yellow-600 to-orange-600";
-
-    return (
-      <div className={`fixed top-0 left-0 right-0 ${bgClass} text-white p-3 text-center z-50 shadow-lg`}>
-        <div className="flex items-center justify-center space-x-4 flex-wrap">
-          <span className="text-lg">{isUrgent ? '🚨' : '⚠️'}</span>
-          <span className="font-medium">
-            {isUrgent 
-              ? `Trial expires in ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''}!`
-              : `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} left in your trial`
-            }
-          </span>
-          <button
-            onClick={() => router.push('/paywall')}
-            className="bg-white/20 hover:bg-white/30 px-4 py-1 rounded-full text-sm font-semibold transition-colors"
-          >
-            {isUrgent ? 'Upgrade Now!' : 'View Plans'}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Access granted - render the main app
+  // Access granted - render the main app with proper layout container
   return (
     <>
       <Head>
@@ -196,11 +168,7 @@ export default function AppPage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <TrialWarningBanner />
-      
-      <div className={accessStatus === 'trial' && trialDaysRemaining <= 3 ? "pt-12" : ""}>
-        <MainApp />
-      </div>
+      <MainApp />
 
       {/* Status indicator for development */}
       {process.env.NODE_ENV === 'development' && (

@@ -282,68 +282,57 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-gray-100">
-      {/* Single responsive layout that works on all screen sizes */}
-      <div className="flex flex-col md:flex-row min-h-screen">
-        {/* Control Panel - Full width on mobile, fixed width on desktop */}
-        <div className="w-full md:w-96 md:flex-shrink-0">
-          <ControlPanel
-            isCameraActive={isCameraActive}
-            setIsCameraActive={setIsCameraActive}
-            pageData={pageData}
-            setPageData={setPageData}
-            calibrationData={calibrationData}
-            setCalibrationData={setCalibrationData}
-            handleInstructionsTextChange={handleInstructionsTextChange}
-            statusMessage={statusMessage}
-            setStatusMessage={setStatusMessage}
-            transform={transform}
-            setTransform={setTransform}
-            markNavigation={markNavigation}
-            currentMarksCm={currentMarksCm}
-            handleMarkNavigation={handleMarkNavigation}
-            handleNextPage={handleNextPage}
-            handlePrevPage={handlePrevPage}
-            onCalibrate={handleCalibrate}
-            showGrid={showGrid}
-            setShowGrid={setShowGrid}
-            gridType={gridType}
-            setGridType={setGridType}
-            gridOpacity={gridOpacity}
-            setGridOpacity={setGridOpacity}
-          />
-        </div>
-
-        {/* Camera View - Takes remaining space */}
-        <div className="flex-1 bg-gradient-to-b from-black via-gray-900 to-black flex items-center justify-center relative min-h-[400px] md:min-h-screen">
-          <CameraView
-            isCameraActive={isCameraActive}
-            calibrationData={calibrationData}
-            setCalibrationData={setCalibrationData}
-            pageData={pageData}
-            marksCm={currentMarksCm}
-            markNavigation={markNavigation}
-            transform={transform}
-            setTransform={setTransform}
-            setStatusMessage={setStatusMessage}
-            onCalibrate={handleCalibrate}
-            onMarkNavigation={handleMarkNavigation}
-            onNextPage={handleNextPage}
-            onPrevPage={handlePrevPage}
-            showGrid={showGrid}
-            gridType={gridType}
-            gridOpacity={gridOpacity}
-            triggerParticles={triggerParticles}
-          />
-        </div>
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-gray-100 flex overflow-hidden">
+      {/* Control Panel - Fixed width, scrollable content */}
+      <div className="w-full md:w-96 flex-shrink-0 flex flex-col">
+        <ControlPanel
+          isCameraActive={isCameraActive}
+          setIsCameraActive={setIsCameraActive}
+          pageData={pageData}
+          setPageData={setPageData}
+          calibrationData={calibrationData}
+          setCalibrationData={setCalibrationData}
+          handleInstructionsTextChange={handleInstructionsTextChange}
+          statusMessage={statusMessage}
+          setStatusMessage={setStatusMessage}
+          transform={transform}
+          setTransform={setTransform}
+          markNavigation={markNavigation}
+          currentMarksCm={currentMarksCm}
+          handleMarkNavigation={handleMarkNavigation}
+          handleNextPage={handleNextPage}
+          handlePrevPage={handlePrevPage}
+          onCalibrate={handleCalibrate}
+          showGrid={showGrid}
+          setShowGrid={setShowGrid}
+          gridType={gridType}
+          setGridType={setGridType}
+          gridOpacity={gridOpacity}
+          setGridOpacity={setGridOpacity}
+        />
       </div>
 
-      {/* Debug info - remove this in production */}
-      <div className="fixed bottom-4 right-4 bg-black/50 text-white text-xs p-2 rounded opacity-50 pointer-events-none md:hidden">
-        Mobile Layout Active
-      </div>
-      <div className="fixed bottom-4 right-4 bg-black/50 text-white text-xs p-2 rounded opacity-50 pointer-events-none hidden md:block">
-        Desktop Layout Active
+      {/* Camera View - Takes remaining horizontal space */}
+      <div className="flex-1 bg-gradient-to-b from-black via-gray-900 to-black flex items-center justify-center">
+        <CameraView
+          isCameraActive={isCameraActive}
+          calibrationData={calibrationData}
+          setCalibrationData={setCalibrationData}
+          pageData={pageData}
+          marksCm={currentMarksCm}
+          markNavigation={markNavigation}
+          transform={transform}
+          setTransform={setTransform}
+          setStatusMessage={setStatusMessage}
+          onCalibrate={handleCalibrate}
+          onMarkNavigation={handleMarkNavigation}
+          onNextPage={handleNextPage}
+          onPrevPage={handlePrevPage}
+          showGrid={showGrid}
+          gridType={gridType}
+          gridOpacity={gridOpacity}
+          triggerParticles={triggerParticles}
+        />
       </div>
     </div>
   );
