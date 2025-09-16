@@ -34,11 +34,5 @@
     "files": [
       "static/chunks/_pages-dir-browser_MainApp_tsx.js"
     ]
-  },
-  "pages\\index.tsx -> @stripe/stripe-js": {
-    "id": "pages\\index.tsx -> @stripe/stripe-js",
-    "files": [
-      "static/chunks/_pages-dir-browser_node_modules_stripe_stripe-js_lib_index_mjs.js"
-    ]
   }
 }

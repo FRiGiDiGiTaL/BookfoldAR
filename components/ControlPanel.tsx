@@ -1,4 +1,4 @@
-// components/ControlPanel.tsx - Updated with UserDashboard Integration
+// components/ControlPanel.tsx - Fixed Manual Marking Input Processing
 import React, { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type {
@@ -246,7 +246,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     6: false  // Manual Marking Instructions
   });
 
-  // Function to clean and format book folding input
+  // Fixed function to clean and format book folding input
   const cleanBookFoldingInput = useCallback((raw: string): string => {
     if (!raw || !raw.trim()) return '';
     
@@ -258,17 +258,42 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       line = line.trim();
       if (!line) continue;
       
-      // Skip comment lines
+      // Skip comment lines but keep them
       if (line.startsWith('#')) {
         result.push(line);
         continue;
       }
       
-      // Remove common prefixes
+      // Check if line already has the correct format (PAGE-RANGE + measurements)
+      const correctFormatRegex = /^\s*(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)\s+([0-9.,\s]+)$/;
+      const correctFormatMatch = line.match(correctFormatRegex);
+      
+      if (correctFormatMatch) {
+        // Line is already in the correct format, just clean up spacing and measurements
+        const pageSpec = correctFormatMatch[1].trim();
+        let measurements = correctFormatMatch[2].trim();
+        
+        // Clean up measurements: normalize separators
+        measurements = measurements
+          .replace(/[|;]/g, ",")           // Replace pipes and semicolons with commas
+          .replace(/\s+/g, " ")           // Multiple spaces to single space
+          .replace(/,\s*,/g, ",")         // Remove double commas
+          .replace(/,\s+/g, ", ")         // Normalize comma spacing
+          .replace(/\s*,/g, ",")          // Remove space before comma
+          .replace(/,/g, ", ")            // Add space after comma
+          .replace(/,\s*$/, "")           // Remove trailing comma
+          .trim();
+        
+        // Use proper spacing format
+        result.push(pageSpec + "    " + measurements);
+        continue;
+      }
+      
+      // Line needs processing - remove common prefixes
       line = line.replace(/^(Page|Pg|P)\.?\s*/i, "");
       line = line.replace(/[:]/g, " "); // Replace colons with spaces
       
-      // Try to extract explicit page number
+      // Try to extract explicit page number at start
       const pageMatch = line.match(/^(\d+)\s+(.*)$/);
       let measurements: string;
       let pageNumbers: string;
@@ -279,10 +304,17 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         measurements = pageMatch[2];
         pageNumbers = pageNo + "-" + (pageNo + 1);
       } else {
-        // No explicit page number, use auto-incrementing
-        measurements = line;
-        pageNumbers = autoPage + "-" + (autoPage + 1);
-        autoPage += 2;
+        // No explicit page number, check if it starts with numbers that could be measurements
+        const startsWithNumberRegex = /^[0-9.,\s|;]+$/;
+        if (startsWithNumberRegex.test(line)) {
+          // Looks like measurements only, use auto-incrementing page numbers
+          measurements = line;
+          pageNumbers = autoPage + "-" + (autoPage + 1);
+          autoPage += 2;
+        } else {
+          // Skip lines that don't match expected patterns
+          continue;
+        }
       }
       
       // Clean up measurements: normalize separators
@@ -428,7 +460,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         `
       }} />
 
-            <div className="space-y-3">
+      <div className="space-y-3">
         {/* Book Dimensions */}
         <CollapsibleSection
           stepNumber={1}
@@ -715,7 +747,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           />
         </CollapsibleSection>
 
-        {/* Enhanced Manual Marking Instructions */}
+        {/* Enhanced Manual Marking Instructions - FIXED */}
         <CollapsibleSection
           stepNumber={6}
           title="Manual Marking Instructions"
@@ -730,7 +762,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               <textarea
                 value={rawInput}
                 onChange={(e) => handleRawInputChange(e.target.value)}
-                placeholder="Paste measurements here... (e.g., Page 1 2.2 5.5 7.7, 8.1, 8.9 | 9.3, 10.0 | 11.0)"
+                placeholder="Paste measurements here... (e.g., 1-2  7.9, 8.6 OR Page 1 2.2 5.5 7.7, 8.1, 8.9)"
                 rows={4}
                 className="w-full glass-input text-white focus:glass-status-success transition-all duration-300 rounded-lg py-3 px-4 font-mono text-sm placeholder-gray-400 border border-gray-500/30"
               />
@@ -778,6 +810,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 Supported Input Formats for AR:
               </h4>
               <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-start">
+                  <span className="text-green-400 mr-2">✅</span>
+                  <span><span className="text-green-400">1-2    7.9, 8.6</span> → Already perfect format</span>
+                </div>
                 <div className="flex items-start">
                   <span className="text-blue-400 mr-2">•</span>
                   <span><span className="text-green-400">Page 1 2.2 5.5 7.7, 8.1</span> → Auto-converts to AR format</span>

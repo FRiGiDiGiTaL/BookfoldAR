@@ -1,4 +1,4 @@
-// pages/index.tsx - Fixed landing page with proper pricing and payment flow
+// pages/index.tsx - Fixed payment handling
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
@@ -24,6 +24,7 @@ export default function LandingPage() {
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [trialDaysRemaining, setTrialDaysRemaining] = useState<number>(0);
+  const [paymentError, setPaymentError] = useState<string>("");
 
   useEffect(() => {
     setIsClient(true);
@@ -99,10 +100,16 @@ export default function LandingPage() {
       // Check for successful payment return
       if (router.query.success === 'true') {
         console.log('🎉 Payment success detected, rechecking access');
-        setTimeout(() => checkUserAccess(), 2000); // Give webhook time to process
+        setTimeout(() => checkUserAccess(), 2000);
+      }
+      
+      // Check for payment cancellation
+      if (router.query.cancelled === 'true') {
+        setPaymentError('Payment was cancelled. No charges were made.');
+        setTimeout(() => setPaymentError(''), 5000);
       }
     }
-  }, [isClient, router.query.success]);
+  }, [isClient, router.query.success, router.query.cancelled]);
 
   const startTrial = async () => {
     if (!email || !email.includes('@')) {
@@ -111,6 +118,7 @@ export default function LandingPage() {
     }
 
     setIsStartingTrial(true);
+    setPaymentError('');
 
     try {
       // Create trial data
@@ -147,14 +155,27 @@ export default function LandingPage() {
     const userEmailToUse = userEmail || email.trim().toLowerCase();
     
     if (!userEmailToUse) {
-      alert('Please enter your email address');
+      setPaymentError('Please enter your email address');
+      return;
+    }
+
+    if (!userEmailToUse.includes('@')) {
+      setPaymentError('Please enter a valid email address');
       return;
     }
 
     setIsProcessingPayment(true);
+    setPaymentError('');
 
     try {
       console.log('💳 Creating checkout session for:', userEmailToUse);
+
+      // Create absolute URLs
+      const baseUrl = window.location.origin;
+      const successUrl = `${baseUrl}/?success=true`;
+      const cancelUrl = `${baseUrl}/?cancelled=true`;
+
+      console.log('Using URLs:', { successUrl, cancelUrl });
 
       // Create checkout session for $24.99 one-time payment
       const response = await fetch('/api/create-checkout', {
@@ -164,10 +185,15 @@ export default function LandingPage() {
         },
         body: JSON.stringify({
           email: userEmailToUse,
-          successUrl: `${window.location.origin}/?success=true`,
-          cancelUrl: `${window.location.origin}/?cancelled=true`
+          successUrl,
+          cancelUrl
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const data = await response.json();
 
@@ -175,29 +201,21 @@ export default function LandingPage() {
         throw new Error(data.error);
       }
 
+      if (!data.url) {
+        throw new Error('No checkout URL received from server');
+      }
+
       // Store email for later verification
       localStorage.setItem('userEmail', userEmailToUse);
-
-      // Redirect to Stripe Checkout
-      const stripe = await import('@stripe/stripe-js').then(mod => 
-        mod.loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-      );
       
-      if (!stripe) {
-        throw new Error('Stripe failed to load');
-      }
+      console.log('✅ Checkout session created, redirecting to:', data.url);
 
-      const { error: stripeError } = await stripe.redirectToCheckout({
-        sessionId: data.sessionId,
-      });
+      // Direct redirect to Stripe Checkout
+      window.location.href = data.url;
 
-      if (stripeError) {
-        throw new Error(stripeError.message);
-      }
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
-      alert('Payment failed. Please try again.');
+      setPaymentError(`Payment failed: ${error.message || 'Please try again.'}`);
     } finally {
       setIsProcessingPayment(false);
     }
@@ -262,6 +280,11 @@ export default function LandingPage() {
               ✅ No credit card required
             </p>
           </div>
+          {paymentError && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-400/30 rounded text-red-400 text-sm">
+              {paymentError}
+            </div>
+          )}
           <button
             onClick={handleAccessApp}
             className="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold text-white transition-colors mb-3"
@@ -273,7 +296,7 @@ export default function LandingPage() {
             disabled={isProcessingPayment}
             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-500 px-4 py-2 rounded text-white text-sm transition-colors"
           >
-            {isProcessingPayment ? 'Processing...' : 'Upgrade Now - $24.99 (Lifetime)'}
+            {isProcessingPayment ? 'Creating checkout session...' : 'Upgrade Now - $24.99 (Lifetime)'}
           </button>
         </div>
       );
@@ -295,12 +318,17 @@ export default function LandingPage() {
               💎 One-time payment for lifetime access
             </p>
           </div>
+          {paymentError && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-400/30 rounded text-red-400 text-sm">
+              {paymentError}
+            </div>
+          )}
           <button
             onClick={handlePayment}
             disabled={isProcessingPayment}
             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-500 px-6 py-3 rounded-lg font-semibold text-white transition-colors"
           >
-            {isProcessingPayment ? 'Processing...' : '💎 Get Lifetime Access - $24.99'}
+            {isProcessingPayment ? 'Creating checkout session...' : '💎 Get Lifetime Access - $24.99'}
           </button>
         </div>
       );
@@ -319,6 +347,12 @@ export default function LandingPage() {
         <p className="text-sm text-gray-200 mb-6">
           Full access to all AR features during your trial. No credit card required to start!
         </p>
+        
+        {paymentError && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-400/30 rounded text-red-400 text-sm">
+            {paymentError}
+          </div>
+        )}
         
         <div className="space-y-4">
           <div>
