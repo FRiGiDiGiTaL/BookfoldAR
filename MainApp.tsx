@@ -282,9 +282,10 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-gray-100 flex overflow-hidden">
-      {/* Control Panel - Fixed width, scrollable content */}
-      <div className="w-full md:w-96 flex-shrink-0 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-gray-100 relative">
+      
+      {/* Control Panel - Natural flow on mobile, fixed position on desktop */}
+      <div className="md:absolute md:top-0 md:left-0 md:w-96 md:h-full md:overflow-y-auto md:z-10">
         <ControlPanel
           isCameraActive={isCameraActive}
           setIsCameraActive={setIsCameraActive}
@@ -312,8 +313,8 @@ const MainApp: React.FC = () => {
         />
       </div>
 
-      {/* Camera View - Takes remaining horizontal space */}
-      <div className="flex-1 bg-gradient-to-b from-black via-gray-900 to-black flex items-center justify-center">
+      {/* Camera View - Natural flow on mobile, fixed position on desktop */}
+      <div className="bg-gradient-to-b from-black via-gray-900 to-black flex items-center justify-center min-h-[400px] p-4 md:absolute md:top-0 md:right-0 md:bottom-0 md:left-96 md:p-0 md:min-h-0">
         <CameraView
           isCameraActive={isCameraActive}
           calibrationData={calibrationData}
@@ -337,5 +338,6 @@ const MainApp: React.FC = () => {
     </div>
   );
 };
+
 
 export default MainApp;

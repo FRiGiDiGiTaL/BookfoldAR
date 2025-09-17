@@ -1,4 +1,4 @@
-// pages/index.tsx - Fixed payment handling
+// pages/index.tsx - Added legal links without disrupting layout
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
@@ -402,6 +402,26 @@ export default function LandingPage() {
             <li>✅ Lifetime access after trial</li>
           </ul>
         </div>
+
+        {/* Legal Agreement Notice */}
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <p className="text-xs text-gray-400 text-center">
+            By starting your trial, you agree to our{' '}
+            <button 
+              onClick={() => router.push('/terms')}
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              Terms of Service
+            </button>
+            {' '}and{' '}
+            <button 
+              onClick={() => router.push('/privacy')}
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              Privacy Policy
+            </button>
+          </p>
+        </div>
       </div>
     );
   };
@@ -415,6 +435,36 @@ export default function LandingPage() {
           Precision book folding with augmented reality assistance. Transform any book into stunning art with AR guidance.
         </p>
         {renderMainSection()}
+      </section>
+
+      {/* Legal Links Section - Prominently placed */}
+      <section className="bg-gray-800/50 py-12">
+        <div className="max-w-4xl mx-auto text-center px-6">
+          <h3 className="text-xl font-bold text-white mb-6">📋 Legal Information</h3>
+          <div className="flex flex-wrap justify-center gap-6">
+            <button 
+              onClick={() => router.push('/terms')}
+              className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-400/30 px-6 py-3 rounded-lg text-blue-300 hover:text-white transition-all duration-200 font-medium"
+            >
+              📜 Terms of Service
+            </button>
+            <button 
+              onClick={() => router.push('/privacy')}
+              className="bg-green-600/20 hover:bg-green-600/40 border border-green-400/30 px-6 py-3 rounded-lg text-green-300 hover:text-white transition-all duration-200 font-medium"
+            >
+              🔒 Privacy Policy
+            </button>
+            <button 
+              onClick={() => router.push('/refund')}
+              className="bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-400/30 px-6 py-3 rounded-lg text-yellow-300 hover:text-white transition-all duration-200 font-medium"
+            >
+              💰 Refund Policy
+            </button>
+          </div>
+          <p className="text-gray-400 text-sm mt-4">
+            Important information about your rights and our policies
+          </p>
+        </div>
       </section>
 
       {/* Features Section */}
@@ -466,6 +516,32 @@ export default function LandingPage() {
 
       <footer className="bg-gray-800 py-8 px-4 text-center text-gray-400">
         <p>&copy; 2025 BookfoldAR. Transform your book folding with AR precision.</p>
+        <div className="mt-4 flex justify-center space-x-6 text-xs">
+          <button 
+            onClick={() => router.push('/terms')}
+            className="hover:text-white transition-colors"
+          >
+            Terms
+          </button>
+          <button 
+            onClick={() => router.push('/privacy')}
+            className="hover:text-white transition-colors"
+          >
+            Privacy
+          </button>
+          <button 
+            onClick={() => router.push('/refund')}
+            className="hover:text-white transition-colors"
+          >
+            Refunds
+          </button>
+          <a 
+            href="mailto:FRiGiDiGiTaL@gmail.com"
+            className="hover:text-white transition-colors"
+          >
+            Support
+          </a>
+        </div>
       </footer>
     </div>
   );
